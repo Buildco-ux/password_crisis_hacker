@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Secure Login</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Arial;margin:24px;max-width:520px}
+    label{display:block;margin:8px 0 4px}
+    input{width:100%;padding:8px;border:1px solid #ddd;border-radius:8px}
+    button{margin-top:12px;padding:10px 14px;border:0;border-radius:10px;background:#111;color:#fff;cursor:pointer}
+    .note{font-size:12px;color:#555;margin-top:10px}
+    .resp{background:#f6f6f6;padding:8px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <h1>Login</h1>
+  <form id="f">
+    <label>Username</label>
+    <input name="username" required>
+    <label>Password</label>
+    <input type="password" name="password" required>
+    <button type="submit">Login</button>
+    <div class="note">Demo logs the attempt with IP, geo (approx), and device signals.</div>
+  </form>
+  <div class="resp" id="resp"></div>
+
+  <script>
+    function getSignals() {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const screenStr = `${screen.width}x${screen.height}@${window.devicePixelRatio||1}`;
+      const mem = navigator.deviceMemory || null;
+      const cores = navigator.hardwareConcurrency || null;
+      const platform = navigator.platform || null;
+      const ua = navigator.userAgent;
+      const lang = navigator.language || null;
+      return { tz, screen: screenStr, memory_gb: mem, cores, platform, ua, lang };
+    }
+
+    document.getElementById('f').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const payload = {
+        username: fd.get('username'),
+        ...getSignals()
+      };
+      const r = await fetch('/api/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await r.json();
+      document.getElementById('resp').textContent = JSON.stringify(j, null, 2);
+    });
+  </script>
+</body>
+</html>

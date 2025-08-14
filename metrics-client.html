@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metrics Client</title>
+  <style>
+    :root {
+      --primary: #1abc9c;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --success: #27ae60;
+      --accent: #34495e;
+      --card-bg: #fff;
+      --border-radius: 12px;
+      --shadow: 0 4px 24px rgba(44,62,80,0.08);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6fa;
+      color: #222;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: var(--border-radius);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    
+    .header h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+    
+    .card h2 {
+      color: var(--accent);
+      margin-bottom: 20px;
+      font-size: 1.4em;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1em;
+      background: #f8f9fa;
+    }
+    
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+    }
+    
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: background 0.2s;
+      margin-right: 10px;
+    }
+    
+    .btn:hover {
+      background: var(--accent);
+    }
+    
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .btn-success {
+      background: var(--success);
+    }
+    
+    .btn-success:hover {
+      background: #229954;
+    }
+    
+    .btn-danger {
+      background: var(--danger);
+    }
+    
+    .btn-danger:hover {
+      background: #c0392b;
+    }
+    
+    .status {
+      padding: 15px;
+      border-radius: 6px;
+      margin: 20px 0;
+      border-left: 4px solid;
+    }
+    
+    .status-success {
+      background: #d4edda;
+      border-color: var(--success);
+      color: #155724;
+    }
+    
+    .status-error {
+      background: #f8d7da;
+      border-color: var(--danger);
+      color: #721c24;
+    }
+    
+    .status-warning {
+      background: #fff3cd;
+      border-color: var(--warning);
+      color: #856404;
+    }
+    
+    .status-info {
+      background: #d1ecf1;
+      border-color: #17a2b8;
+      color: #0c5460;
+    }
+    
+    .metrics-display {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 20px;
+    }
+    
+    .metrics-display h4 {
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    
+    .metrics-display p {
+      margin: 5px 0;
+      font-family: monospace;
+    }
+    
+    .connection-info {
+      background: #e8f5e8;
+      border: 1px solid var(--success);
+      border-radius: 6px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    
+    .connection-info h4 {
+      color: var(--success);
+      margin-bottom: 10px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Metrics Client</h1>
+      <p>Connect to a metrics host server and send password analysis data</p>
+    </div>
+    
+    <!-- Connection Setup -->
+    <div class="card">
+      <h2>🔌 Connection Setup</h2>
+      <div class="form-group">
+        <label for="serverUrl">Server URL:</label>
+        <input type="text" id="serverUrl" placeholder="ws://localhost:8080" value="ws://localhost:8080">
+      </div>
+      <div class="form-group">
+        <label for="roomCode">Room Code:</label>
+        <input type="text" id="roomCode" placeholder="Enter the room code from your controller">
+      </div>
+      <button class="btn" onclick="connectToServer()">Connect</button>
+      <button class="btn btn-danger" onclick="disconnectFromServer()" disabled id="disconnectBtn">Disconnect</button>
+    </div>
+    
+    <!-- Connection Status -->
+    <div id="connectionStatus" class="hidden">
+      <div class="connection-info">
+        <h4>✅ Connected Successfully</h4>
+        <p><strong>Server:</strong> <span id="connectedServer"></span></p>
+        <p><strong>Room:</strong> <span id="connectedRoom"></span></p>
+        <p><strong>Client ID:</strong> <span id="clientId"></span></p>
+      </div>
+    </div>
+    
+    <!-- Password Analysis -->
+    <div class="card">
+      <h2>🔍 Password Analysis</h2>
+      <div class="form-group">
+        <label for="passwordInput">Enter Password:</label>
+        <input type="text" id="passwordInput" placeholder="Type a password to analyze">
+      </div>
+      <button class="btn btn-success" onclick="analyzeAndSend()" disabled id="analyzeBtn">Analyze & Send</button>
+      <button class="btn" onclick="generateTestPassword()">Generate Test Password</button>
+      
+      <div id="metricsDisplay" class="metrics-display hidden">
+        <h4>Password Metrics:</h4>
+        <div id="metricsContent"></div>
+      </div>
+    </div>
+    
+    <!-- Status Messages -->
+    <div id="statusContainer"></div>
+    
+    <!-- Auto-send Demo -->
+    <div class="card">
+      <h2>🚀 Auto-send Demo</h2>
+      <p>Automatically send metrics every few seconds to demonstrate real-time data flow.</p>
+      <div class="form-group">
+        <label for="autoSendInterval">Interval (seconds):</label>
+        <input type="number" id="autoSendInterval" value="5" min="1" max="60">
+      </div>
+      <button class="btn" onclick="startAutoSend()" disabled id="autoSendBtn">Start Auto-send</button>
+      <button class="btn btn-danger" onclick="stopAutoSend()" disabled id="stopAutoBtn">Stop Auto-send</button>
+    </div>
+  </div>
+  
+  <script>
+    let ws = null;
+    let clientId = null;
+    let autoSendInterval = null;
+    let isConnected = false;
+    
+    // Connect to the metrics server
+    function connectToServer() {
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+      const roomCode = document.getElementById('roomCode').value.trim();
+      
+      if (!serverUrl || !roomCode) {
+        showStatus('Please enter both server URL and room code', 'error');
+        return;
+      }
+      
+      try {
+        ws = new WebSocket(serverUrl);
+        
+        ws.onopen = () => {
+          showStatus('Connected to server, authenticating...', 'info');
+          ws.send(JSON.stringify({
+            type: 'hello',
+            role: 'client',
+            code: roomCode
+          }));
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            handleServerMessage(message);
+          } catch (error) {
+            console.error('Failed to parse message:', error);
+          }
+        };
+        
+        ws.onclose = () => {
+          handleDisconnection();
+        };
+        
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          showStatus('Connection error occurred', 'error');
+        };
+        
+      } catch (error) {
+        showStatus('Failed to create connection: ' + error.message, 'error');
+      }
+    }
+    
+    // Handle messages from the server
+    function handleServerMessage(message) {
+      switch (message.type) {
+        case 'room_info':
+          clientId = message.clientId;
+          isConnected = true;
+          showStatus('Successfully joined room!', 'success');
+          updateConnectionUI();
+          break;
+          
+        case 'error':
+          showStatus('Server error: ' + message.message, 'error');
+          break;
+          
+        default:
+          console.log('Received message:', message);
+      }
+    }
+    
+    // Update UI after successful connection
+    function updateConnectionUI() {
+      document.getElementById('connectedServer').textContent = document.getElementById('serverUrl').value;
+      document.getElementById('connectedRoom').textContent = document.getElementById('roomCode').value;
+      document.getElementById('clientId').textContent = clientId;
+      document.getElementById('connectionStatus').classList.remove('hidden');
+      
+      document.getElementById('disconnectBtn').disabled = false;
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('autoSendBtn').disabled = false;
+      
+      document.getElementById('serverUrl').disabled = true;
+      document.getElementById('roomCode').disabled = true;
+    }
+    
+    // Handle disconnection
+    function handleDisconnection() {
+      isConnected = false;
+      clientId = null;
+      ws = null;
+      
+      document.getElementById('connectionStatus').classList.add('hidden');
+      document.getElementById('disconnectBtn').disabled = true;
+      document.getElementById('analyzeBtn').disabled = true;
+      document.getElementById('autoSendBtn').disabled = true;
+      document.getElementById('stopAutoBtn').disabled = true;
+      
+      document.getElementById('serverUrl').disabled = false;
+      document.getElementById('roomCode').disabled = false;
+      
+      showStatus('Disconnected from server', 'warning');
+      
+      if (autoSendInterval) {
+        stopAutoSend();
+      }
+    }
+    
+    // Disconnect from server
+    function disconnectFromServer() {
+      if (ws) {
+        ws.close();
+      }
+    }
+    
+    // Analyze password and send metrics
+    function analyzeAndSend() {
+      const password = document.getElementById('passwordInput').value.trim();
+      if (!password) {
+        showStatus('Please enter a password to analyze', 'warning');
+        return;
+      }
+      
+      const metrics = analyzePassword(password);
+      displayMetrics(metrics);
+      
+      if (isConnected && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'metrics',
+          payload: metrics
+        }));
+        showStatus('Metrics sent successfully!', 'success');
+      } else {
+        showStatus('Not connected to server', 'error');
+      }
+    }
+    
+    // Analyze password and return metrics
+    function analyzePassword(password) {
+      let charsetSize = 0;
+      if (/[a-z]/.test(password)) charsetSize += 26;
+      if (/[A-Z]/.test(password)) charsetSize += 26;
+      if (/[0-9]/.test(password)) charsetSize += 10;
+      if (/[^A-Za-z0-9]/.test(password)) charsetSize += 32;
+      
+      const entropy = password.length * Math.log2(charsetSize || 1);
+      const attempts = Math.pow(2, entropy);
+      
+      let time = '';
+      if (attempts < 1e6) time = 'Instant';
+      else if (attempts < 1e9) time = 'Seconds';
+      else if (attempts < 1e12) time = 'Minutes';
+      else if (attempts < 1e15) time = 'Hours';
+      else if (attempts < 1e18) time = 'Days';
+      else time = 'Years';
+      
+      const pattern = password.split('').map(char => {
+        if (/[A-Z]/.test(char)) return "U";
+        if (/[a-z]/.test(char)) return "l";
+        if (/[0-9]/.test(char)) return "D";
+        return "S";
+      }).join('');
+      
+      return {
+        entropy: Math.round(entropy * 10) / 10,
+        time: time,
+        pattern: pattern,
+        length: password.length,
+        breached: false, // This would normally be checked against a breach database
+        ts: Date.now()
+      };
+    }
+    
+    // Display metrics
+    function displayMetrics(metrics) {
+      const container = document.getElementById('metricsContent');
+      container.innerHTML = `
+        <p><strong>Entropy:</strong> ${metrics.entropy}</p>
+        <p><strong>Time to Crack:</strong> ${metrics.time}</p>
+        <p><strong>Pattern:</strong> ${metrics.pattern}</p>
+        <p><strong>Length:</strong> ${metrics.length}</p>
+        <p><strong>Breached:</strong> ${metrics.breached ? 'Yes' : 'No'}</p>
+        <p><strong>Timestamp:</strong> ${new Date(metrics.ts).toLocaleString()}</p>
+      `;
+      
+      document.getElementById('metricsDisplay').classList.remove('hidden');
+    }
+    
+    // Generate test password
+    function generateTestPassword() {
+      const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const lower = "abcdefghijklmnopqrstuvwxyz";
+      const digits = "0123456789";
+      const symbols = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+      
+      let password = "";
+      password += upper[Math.floor(Math.random() * upper.length)];
+      password += lower[Math.floor(Math.random() * lower.length)];
+      password += digits[Math.floor(Math.random() * digits.length)];
+      password += symbols[Math.floor(Math.random() * symbols.length)];
+      
+      for (let i = 4; i < 12; i++) {
+        const all = upper + lower + digits + symbols;
+        password += all[Math.floor(Math.random() * all.length)];
+      }
+      
+      password = password.split('').sort(() => Math.random() - 0.5).join('');
+      document.getElementById('passwordInput').value = password;
+    }
+    
+    // Start auto-sending metrics
+    function startAutoSend() {
+      if (!isConnected) {
+        showStatus('Must be connected to start auto-send', 'error');
+        return;
+      }
+      
+      const interval = parseInt(document.getElementById('autoSendInterval').value) * 1000;
+      
+      autoSendInterval = setInterval(() => {
+        if (isConnected && ws && ws.readyState === WebSocket.OPEN) {
+          const testMetrics = {
+            entropy: Math.random() * 50 + 20,
+            time: 'test',
+            pattern: 'Test',
+            length: Math.floor(Math.random() * 20) + 8,
+            breached: false,
+            ts: Date.now()
+          };
+          
+          ws.send(JSON.stringify({
+            type: 'metrics',
+            payload: testMetrics
+          }));
+          
+          showStatus('Auto-sent test metrics', 'info');
+        }
+      }, interval);
+      
+      document.getElementById('autoSendBtn').disabled = true;
+      document.getElementById('stopAutoBtn').disabled = false;
+      
+      showStatus('Auto-send started', 'success');
+    }
+    
+    // Stop auto-sending metrics
+    function stopAutoSend() {
+      if (autoSendInterval) {
+        clearInterval(autoSendInterval);
+        autoSendInterval = null;
+        
+        document.getElementById('autoSendBtn').disabled = false;
+        document.getElementById('stopAutoBtn').disabled = true;
+        
+        showStatus('Auto-send stopped', 'warning');
+      }
+    }
+    
+    // Show status message
+    function showStatus(message, type) {
+      const container = document.getElementById('statusContainer');
+      const statusDiv = document.createElement('div');
+      statusDiv.className = `status status-${type}`;
+      statusDiv.textContent = message;
+      
+      container.appendChild(statusDiv);
+      
+      // Remove status after 5 seconds
+      setTimeout(() => {
+        if (statusDiv.parentNode) {
+          statusDiv.remove();
+        }
+      }, 5000);
+    }
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+      if (ws) {
+        ws.close();
+      }
+      if (autoSendInterval) {
+        clearInterval(autoSendInterval);
+      }
+    });
+  </script>
+</body>
+</html>

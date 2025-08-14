@@ -1,0 +1,19 @@
+<script>
+async function initWebSocket() {
+    try {
+        const res = await fetch("/api/wsinfo");
+        const data = await res.json();
+        console.log("Using WebSocket:", data.wsUrl);
+
+        const ws = new WebSocket(data.wsUrl);
+        ws.onopen = () => console.log("Connected to WebSocket");
+        ws.onmessage = (msg) => console.log("Message:", msg.data);
+        ws.onerror = (err) => console.error("WS Error:", err);
+        ws.onclose = () => console.log("WebSocket closed");
+    } catch (err) {
+        console.error("Failed to fetch WS info:", err);
+    }
+}
+
+initWebSocket();
+</script>
