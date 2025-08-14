@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>🔐 Login Attempts Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-size: 1.8em;
+      color: #2c3e50;
+    }
+
+    .loading {
+      font-size: 1.2em;
+      color: #888;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    th {
+      background: #16a085;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr:hover {
+      background: #f9f9f9;
+    }
+
+    .success {
+      color: #27ae60;
+      font-weight: bold;
+    }
+
+    .fail {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+
+    .empty-row {
+      text-align: center;
+      font-style: italic;
+      color: #999;
+    }
+
+    @media (max-width: 900px) {
+      .container { padding: 16px; }
+      table, th, td { font-size: 0.9em; }
+      th, td { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📝 Recent Public Login Attempts</h2>
+    <div class="loading" id="loading">Loading login attempts...</div>
+    <table style="display:none;" id="attemptsTable">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Username</th>
+          <th>Status</th>
+          <th>IP</th>
+          <th>Country</th>
+          <th>Region</th>
+          <th>City</th>
+          <th>ASN</th>
+          <th>Org</th>
+          <th>User Agent</th>
+        </tr>
+      </thead>
+      <tbody id="attemptsBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    function formatDate(ts) {
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
+
+    fetch('/api/attempts')
+      .then(r => r.json())
+      .then(j => {
+        const tb = document.getElementById('attemptsBody');
+        const table = document.getElementById('attemptsTable');
+        const loading = document.getElementById('loading');
+
+        loading.style.display = 'none';
+
+        if (!j.ok || !Array.isArray(j.rows)) {
+          tb.innerHTML = `<tr><td colspan="10" class="empty-row">⚠️ Failed to load attempts.</td></tr>`;
+          table.style.display = 'table';
+          return;
+        }
+
+        if (j.rows.length === 0) {
+          tb.innerHTML = `<tr><td colspan="10" class="empty-row">No login attempts found.</td></tr>`;
+          table.style.display = 'table';
+          return;
+        }
+
+        j.rows.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${r.ts ? formatDate(r.ts) : ''}</td>
+            <td>${r.username || ''}</td>
+            <td class="${r.success ? 'success' : 'fail'}">${r.success ? 'Success' : 'Fail'}</td>
+            <td>${r.ip || ''}</td>
+            <td>${r.country || ''}</td>
+            <td>${r.region || ''}</td>
+            <td>${r.city || ''}</td>
+            <td>${r.asn || ''}</td>
+            <td>${r.org || ''}</td>
+            <td>${r.ua || ''}</td>
+          `;
+          tb.appendChild(tr);
+        });
+
+        table.style.display = 'table';
+      })
+      .catch(err => {
+        console.error('Error fetching attempts:', err);
+        document.getElementById('loading').textContent = '⚠️ Error loading data.';
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>🔐 Password Metrics Client</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6fa;
+      color: #222;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(44,62,80,0.10);
+      padding: 36px 32px;
+      min-width: 340px;
+      max-width: 400px;
+      width: 100%;
+    }
+    h2 {
+      margin-top: 0;
+      margin-bottom: 18px;
+      font-size: 1.3em;
+      color: #1abc9c;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+    label {
+      font-weight: 500;
+      margin-bottom: 6px;
+      display: block;
+      color: #34495e;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 14px;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+      font-size: 1em;
+      background: #f4f6fa;
+      box-sizing: border-box;
+      transition: border 0.2s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+      border: 1.5px solid #1abc9c;
+      outline: none;
+    }
+    button {
+      background: #1abc9c;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 1em;
+      margin-bottom: 10px;
+      margin-right: 8px;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #16a085;
+    }
+    #status {
+      margin-top: 12px;
+      font-size: 1em;
+      min-height: 24px;
+      text-align: center;
+      font-weight: 500;
+    }
+    @media (max-width: 500px) {
+      .container {
+        padding: 18px 6px;
+        min-width: unset;
+        max-width: unset;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔌 Password Metrics Client</h2>
+    <label for="server">Server URL</label>
+    <input id="server" type="text" placeholder="ws://YOUR_IP:8080">
+    <label for="code">Pairing Code</label>
+    <input id="code" type="text" placeholder="Pairing code from dashboard">
+    <button id="connect">Connect</button>
+    <hr style="margin:18px 0;">
+    <label for="pw">Password</label>
+    <input id="pw" type="password" placeholder="Enter password locally (never leaves device)">
+    <button id="check">Check</button>
+    <div id="status" style="color:#3498db;"></div>
+  </div>
+
+  <script>
+    let ws;
+
+    async function checkPasswordBreach(password) {
+      try {
+        const sha1 = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(password));
+        const hash = Array.from(new Uint8Array(sha1)).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+        const prefix = hash.slice(0,5), suffix = hash.slice(5);
+        const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+        const text = await res.text();
+        return text.includes(suffix);
+      } catch (e) {
+        updateStatus('❌ Error checking breach: ' + e.message, 'red');
+        return false;
+      }
+    }
+
+    function analyzePassword(pw) {
+      let cs = 0;
+      if (/[a-z]/.test(pw)) cs += 26;
+      if (/[A-Z]/.test(pw)) cs += 26;
+      if (/[0-9]/.test(pw)) cs += 10;
+      if (/[^A-Za-z0-9]/.test(pw)) cs += 32;
+      const entropy = pw.length * Math.log2(cs || 1);
+      const attempts = Math.pow(2, entropy);
+      let time = 'Years';
+      if (attempts < 1e6) time = 'Instant';
+      else if (attempts < 1e9) time = 'Seconds';
+      else if (attempts < 1e12) time = 'Minutes';
+      else if (attempts < 1e15) time = 'Hours';
+      else if (attempts < 1e18) time = 'Days';
+      const pattern = pw.split('').map(c =>
+        /[A-Z]/.test(c) ? 'U' :
+        /[a-z]/.test(c) ? 'l' :
+        /[0-9]/.test(c) ? 'D' : 'S'
+      ).join('');
+      return { entropy, time, pattern, length: pw.length };
+    }
+
+    function updateStatus(msg, color = '#3498db') {
+      const status = document.getElementById('status');
+      status.textContent = msg;
+      status.style.color = color;
+    }
+
+    document.getElementById('connect').onclick = () => {
+      const url = document.getElementById('server').value.trim();
+      const code = document.getElementById('code').value.trim();
+
+      if (!/^wss?:\/\/.+/.test(url)) {
+        updateStatus('❌ Invalid WebSocket URL', 'red');
+        return;
+      }
+
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'hello', role: 'client', code }));
+        updateStatus('✅ Connected to server', 'green');
+      };
+
+      ws.onclose = () => {
+        updateStatus('🔌 Disconnected', 'orange');
+        ws = null;
+      };
+
+      ws.onerror = (e) => {
+        updateStatus('❌ Connection error: ' + e.message, 'red');
+        console.error('WebSocket error', e);
+      };
+
+      ws.onmessage = (msg) => {
+        console.log('📩 Received:', msg.data);
+      };
+    };
+
+    document.getElementById('check').onclick = async () => {
+      if (!ws || ws.readyState !== 1) {
+        updateStatus('⚠️ Connect to server first', 'orange');
+        return;
+      }
+
+      const pw = document.getElementById('pw').value;
+      if (!pw) {
+        updateStatus('⚠️ Enter a password', 'orange');
+        return;
+      }
+
+      const local = analyzePassword(pw);
+      const breached = await checkPasswordBreach(pw);
+
+      ws.send(JSON.stringify({
+        type: 'metrics',
+        payload: {
+          ...local,
+          breached,
+          ts: new Date().toISOString()
+        }
+      }));
+
+      updateStatus(breached
+        ? '⚠️ Password has been breached before!'
+        : '✅ Password is safe and metrics sent.', breached ? 'red' : 'green');
+    };
+  </script>
+</body>
+</html>

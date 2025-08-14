@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Password Crisis Early Warning System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --primary: #1abc9c;
+      --danger: #e74c3c;
+      --accent: #34495e;
+      --card-bg: #fff;
+      --card-bg-dark: #23263a;
+      --border-radius: 12px;
+      --shadow: 0 4px 24px rgba(44,62,80,0.08);
+      --input-bg: #f4f6fa;
+      --input-bg-dark: #2c3e50;
+      --table-header: #1abc9c;
+      --table-header-dark: #16a085;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6fa;
+      color: #222;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: #181a2b;
+      color: #e0e0e0;
+    }
+    nav {
+      background: var(--primary);
+      color: white;
+      padding: 18px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    nav h1 {
+      margin: 0;
+      font-size: 2em;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    nav .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-size: 1.1em;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    nav a:hover {
+      color: #f4f6fa;
+      text-decoration: underline;
+    }
+    .toggle-btn {
+      background: white;
+      color: var(--primary);
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1em;
+      margin-left: 12px;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+      transition: background 0.2s, color 0.2s;
+    }
+    .toggle-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      justify-content: center;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 32px 28px;
+      margin-bottom: 24px;
+      flex: 1 1 420px;
+      min-width: 340px;
+      max-width: 600px;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark .card {
+      background: var(--card-bg-dark);
+      color: #e0e0e0;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.4em;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+    body.dark h2 {
+      color: var(--primary);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: var(--input-bg);
+      box-sizing: border-box;
+      margin-bottom: 12px;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark input, body.dark textarea {
+      background: var(--input-bg-dark);
+      color: #e0e0e0;
+      border: 1px solid #444;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      margin-top: 8px;
+      margin-right: 8px;
+      font-size: 1em;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: var(--accent);
+    }
+    table {
+      width: 100%;
+      margin-top: 18px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+    }
+    body.dark table {
+      background: #23263a;
+      color: #e0e0e0;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: var(--table-header);
+      color: white;
+      font-weight: 600;
+      font-size: 1em;
+    }
+    body.dark th {
+      background: var(--table-header-dark);
+    }
+    tr:hover {
+      background: #f1f1f1;
+    }
+    body.dark tr:hover {
+      background: #23263a;
+    }
+    .weak-row {
+      background: #ffe0e0 !important;
+    }
+    #strengthMeter {
+      height: 14px;
+      width: 100%;
+      background: #eee;
+      border-radius: 7px;
+      margin-top: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    #strengthBar {
+      height: 100%;
+      width: 0%;
+      background: #e74c3c;
+      border-radius: 7px;
+      transition: width 0.4s, background 0.4s;
+    }
+    #breachWarning {
+      margin-top: 10px;
+      color: var(--danger);
+      font-weight: 500;
+    }
+    #criteriaFeedback {
+      margin-top: 10px;
+      color: #f39c12;
+      font-size: 1em;
+      padding-left: 18px;
+    }
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+        gap: 18px;
+        padding: 0 6px;
+      }
+      .card {
+        padding: 18px 8px;
+        min-width: unset;
+        max-width: unset;
+      }
+      nav {
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <h1>🔐 Password Crisis Early Warning</h1>
+  <div class="nav-links">
+    <a href="attempts.html">Public Login Attempts</a>
+    <button class="toggle-btn" onclick="toggleTheme()">Toggle Dark Mode</button>
+  </div>
+</nav>
+<div class="container">
+  <!-- Password Analysis -->
+  <div class="card">
+    <h2>🔍 Analyze Your Password</h2>
+    <input type="text" id="userPassword" placeholder="Enter your password here">
+    <button onclick="analyzeUserPassword()">Analyze</button>
+    <button onclick="generatePassword()" style="margin-left:10px;">Generate Password</button>
+    <input type="text" id="generatedPassword" readonly style="margin-top:10px;width:100%;font-weight:bold;">
+    <div class="analysis" id="passwordAnalysis"></div>
+    <div id="strengthMeter">
+      <div id="strengthBar"></div>
+    </div>
+    <div id="breachWarning"></div>
+    <ul id="criteriaFeedback"></ul>
+  </div>
+  <!-- Clustering -->
+  <div class="card">
+    <h2>🔗 Cluster Passwords</h2>
+    <textarea id="passwordInput" rows="6" placeholder="Paste passwords, one per line"></textarea>
+    <button id="exactBtn">Cluster by Hash</button>
+    <button id="patternBtn">Cluster by Pattern</button>
+    <button id="exportBtn">Export CSV</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Cluster/Pattern</th>
+          <th>Count</th>
+          <th>Example Passwords</th>
+          <th>Weakness Score</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+  <!-- Remote Metrics -->
+  <div class="card">
+    <h2>🔌 Remote Metrics (Consent‑based)</h2>
+    <button onclick="generatePairCode()">Generate Pairing Code</button>
+    <input id="pairCode" readonly placeholder="Pairing code" style="width:160px;margin-left:10px;">
+    <input id="serverUrl" placeholder="ws://YOUR_IP:8080" style="width:240px;margin-left:10px;">
+    <button onclick="connectController()">Connect</button>
+    <div id="remoteStatus" style="margin-top:10px;"></div>
+    <table style="width:100%;margin-top:15px;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Entropy</th>
+          <th>Time</th>
+          <th>Pattern</th>
+          <th>Len</th>
+          <th>Breachable</th>
+          <th>When</th>
+        </tr>
+      </thead>
+      <tbody id="remoteTbody"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+}
+
+async function checkPasswordBreach(password) {
+  const sha1 = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(password));
+  const hash = Array.from(new Uint8Array(sha1)).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const prefix = hash.slice(0, 5);
+  const suffix = hash.slice(5);
+  const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+  const text = await res.text();
+  return text.includes(suffix);
+}
+
+function passwordCriteriaFeedback(pw) {
+  const feedback = [];
+  if (pw.length < 12) feedback.push("Password should be at least 12 characters.");
+  if (!/[A-Z]/.test(pw)) feedback.push("Add uppercase letters.");
+  if (!/[a-z]/.test(pw)) feedback.push("Add lowercase letters.");
+  if (!/[0-9]/.test(pw)) feedback.push("Add numbers.");
+  if (!/[^A-Za-z0-9]/.test(pw)) feedback.push("Add symbols.");
+  return feedback;
+}
+
+async function analyzeUserPassword() {
+  const pw = document.getElementById("userPassword").value.trim();
+  if (!pw) return alert("Please enter a password.");
+
+  const analysis = analyzePassword(pw);
+  document.getElementById("passwordAnalysis").innerHTML = `
+    <strong>Password Analysis:</strong><br>
+    🔐 Estimated Time to Crack: ${analysis.time}<br>
+    🔁 Estimated Attempts: ${analysis.attempts.toLocaleString()}<br>
+    🛡 Suggestion: ${analysis.suggestion}
+  `;
+  updateStrengthMeter(analysis.entropy);
+
+  document.getElementById("breachWarning").innerText = "Checking breach database...";
+  const breached = await checkPasswordBreach(pw);
+  document.getElementById("breachWarning").innerText = breached
+    ? "⚠ This password has appeared in known breaches! Do not use."
+    : "✅ This password was not found in known breaches.";
+
+  const feedback = passwordCriteriaFeedback(pw);
+  const ul = document.getElementById("criteriaFeedback");
+  ul.innerHTML = "";
+  feedback.forEach(f => {
+    const li = document.createElement("li");
+    li.innerText = f;
+    ul.appendChild(li);
+  });
+}
+
+function updateStrengthMeter(entropy) {
+  const bar = document.getElementById("strengthBar");
+  let percent = Math.min(100, Math.round((entropy / 60) * 100));
+  bar.style.width = percent + "%";
+  if (entropy < 28) bar.style.background = "#e74c3c";
+  else if (entropy < 40) bar.style.background = "#f1c40f";
+  else bar.style.background = "#1abc9c";
+}
+
+function analyzePassword(pw) {
+  let charsetSize = 0;
+  if (/[a-z]/.test(pw)) charsetSize += 26;
+  if (/[A-Z]/.test(pw)) charsetSize += 26;
+  if (/[0-9]/.test(pw)) charsetSize += 10;
+  if (/[^A-Za-z0-9]/.test(pw)) charsetSize += 32;
+
+  const entropy = pw.length * Math.log2(charsetSize || 1);
+  const attempts = Math.pow(2, entropy);
+  let time = '';
+
+  if (attempts < 1e6) time = 'Instant';
+  else if (attempts < 1e9) time = 'Seconds';
+  else if (attempts < 1e12) time = 'Minutes';
+  else if (attempts < 1e15) time = 'Hours';
+  else if (attempts < 1e18) time = 'Days';
+  else time = 'Years';
+
+  let suggestion = 'Use longer phrases with symbols and mixed case.';
+  if (pw.length >= 12 && /[^A-Za-z0-9]/.test(pw) && /[A-Z]/.test(pw)) {
+    suggestion = 'This password is fairly strong. Avoid reuse and rotate regularly.';
+  }
+
+  return { time, attempts, suggestion, entropy };
+}
+
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function passwordPattern(password) {
+  return password.split('').map(char => {
+    if (/[A-Z]/.test(char)) return "U";
+    if (/[a-z]/.test(char)) return "l";
+    if (/[0-9]/.test(char)) return "D";
+    return "S";
+  }).join('');
+}
+
+function weaknessScore(passwords) {
+  let avgLen = passwords.reduce((a, b) => a + b.length, 0) / passwords.length;
+  let unique = new Set(passwords).size;
+  return Math.round((avgLen * unique) / passwords.length);
+}
+
+function renderClusterChart(clusters, chartId) {
+  document.getElementById(chartId).style.display = "block";
+  const ctx = document.getElementById(chartId).getContext('2d');
+  const labels = Object.keys(clusters).slice(0, 10);
+  const data = Object.values(clusters).slice(0, 10);
+  if (window[chartId]) window[chartId].destroy();
+  window[chartId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Cluster Size',
+        data,
+        backgroundColor: '#1abc9c'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+let lastClusters = {}, lastExamples = {}, lastScores = {};
+
+async function runClustering(byPattern) {
+  const input = document.getElementById("passwordInput").value
+    .split("\n")
+    .map(p => p.trim())
+    .filter(Boolean);
+  if (input.length === 0) {
+    alert("Please paste passwords to cluster.");
+    return;
+  }
+
+  const clusters = {};
+  const examples = {};
+  for (let pw of input) {
+    let key = byPattern ? passwordPattern(pw) : await hashPassword(pw);
+    clusters[key] = (clusters[key] || 0) + 1;
+    if (!examples[key]) examples[key] = [];
+    if (examples[key].length < 3) examples[key].push(pw);
+  }
+
+  const scores = {};
+  for (let key in examples) {
+    scores[key] = weaknessScore(examples[key]);
+  }
+
+  lastClusters = clusters;
+  lastExamples = examples;
+  lastScores = scores;
+  displayResults(clusters, examples, scores);
+
+  if (byPattern) {
+    renderClusterChart(clusters, 'patternClusterChart');
+  } else {
+    renderClusterChart(clusters, 'hashClusterChart');
+  }
+}
+
+function displayResults(clusters, examples, scores) {
+  const tbody = document.getElementById("resultsBody");
+  tbody.innerHTML = "";
+  Object.entries(clusters)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([cluster, count]) => {
+      const ex = examples[cluster].join(", ");
+      const score = scores[cluster];
+      const weakClass = score < 8 ? 'weak-row' : '';
+      const row = `<tr class="${weakClass}">
+        <td>${cluster}</td>
+        <td>${count}</td>
+        <td>${ex}</td>
+        <td>${score}</td>
+      </tr>`;
+      tbody.innerHTML += row;
+    });
+}
+
+document.getElementById("exactBtn").onclick = async () => await runClustering(false);
+document.getElementById("patternBtn").onclick = async () => await runClustering(true);
+
+document.getElementById("exportBtn").onclick = () => {
+  let csv = "Cluster/Pattern,Count,Example Passwords,Weakness Score\n";
+  Object.entries(lastClusters)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([cluster, count]) => {
+      const ex = lastExamples[cluster].join(" | ");
+      const score = lastScores[cluster];
+      csv += `"${cluster}",${count},"${ex}",${score}\n`;
+    });
+  const blob = new Blob([csv], {type: "text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "clusters.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+async function generatePassword(length = 16) {
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const digits = "0123456789";
+  const symbols = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+  const all = upper + lower + digits + symbols;
+  let password = "";
+  password += upper[Math.floor(Math.random() * upper.length)];
+  password += lower[Math.floor(Math.random() * lower.length)];
+  password += digits[Math.floor(Math.random() * digits.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+  for (let i = 4; i < length; i++) {
+    password += all[Math.floor(Math.random() * all.length)];
+  }
+  password = password.split('').sort(() => Math.random() - 0.5).join('');
+  document.getElementById("generatedPassword").value = password;
+  document.getElementById("userPassword").value = password;
+
+  document.getElementById("breachWarning").innerText = "Checking breach database for generated password...";
+  const breached = await checkPasswordBreach(password);
+  document.getElementById("breachWarning").innerText = breached
+    ? "⚠ Generated password has appeared in known breaches! Generate again."
+    : "✅ Generated password was NOT found in known breaches.";
+}
+let ctrlWS = null;
+
+function generatePairCode() {
+  const code = Math.random().toString().slice(2, 8); // 6‑digit code
+  document.getElementById('pairCode').value = code;
+}
+
+function connectController() {
+  const url = document.getElementById('serverUrl').value.trim();
+  const code = document.getElementById('pairCode').value.trim();
+  if (!url || !code) return alert('Generate code and enter server URL.');
+  ctrlWS = new WebSocket(url);
+  ctrlWS.onopen = () => {
+    ctrlWS.send(JSON.stringify({ type:'hello', role:'controller', code }));
+    document.getElementById('remoteStatus').textContent = `Controller connected. Waiting for clients with code ${code}…`;
+  };
+  ctrlWS.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'client_joined') {
+      document.getElementById('remoteStatus').textContent = `Client joined (${msg.clientId}).`;
+    }
+    if (msg.type === 'metrics') {
+      appendRemoteRow(msg.from, msg.payload);
+    }
+  };
+  ctrlWS.onclose = () => document.getElementById('remoteStatus').textContent = 'Disconnected';
+}
+
+function appendRemoteRow(clientId, p) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${clientId.slice(0,8)}…</td>
+                  <td>${p.entropy.toFixed(1)}</td>
+                  <td>${p.time}</td>
+                  <td>${p.pattern}</td>
+                  <td>${p.length}</td>
+                  <td>${p.breached ? '⚠️ Yes' : 'No'}</td>
+                  <td>${new Date(p.ts).toLocaleString()}</td>`;
+  document.getElementById('remoteTbody').prepend(tr);
+}
+
+</script>
+</body>
+</html>
